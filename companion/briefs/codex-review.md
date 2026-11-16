@@ -1,0 +1,2 @@
+<!-- Exact prompt given to OpenAI Codex CLI 0.167.0, `codex exec -s read-only`, 2026-11-15. -->
+Review the code in companion/ (server.mjs, db.mjs, public/index.html and the tests) against companion/CONTRACT.md. Report real defects only: bugs, security problems, contract violations, missing error handling that a user would hit. For each: file:line, what goes wrong, a concrete input that triggers it, severity (critical/important/minor). No style nits. Do not edit files.

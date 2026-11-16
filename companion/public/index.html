@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+  content="width=device-width,initial-scale=1">
+<title>Booked</title>
+<style>
+body { font: 16px sans-serif; max-width: 30em;
+  margin: 2em auto; }
+li { margin: .3em 0; }
+.booked { color: #888; }
+</style>
+</head>
+<body>
+<h1>Booked</h1>
+<label>Date <input type="date" id="date"></label>
+<ul id="slots"></ul>
+<form id="form" hidden>
+  <p>Book <b id="chosen"></b></p>
+  <p><label>Name
+    <input id="name" maxlength="100" required></label></p>
+  <p><label>Email
+    <input id="email" type="email" required></label></p>
+  <button>Book</button>
+</form>
+<p id="msg" role="status"></p>
+<script>
+const $ = (id) => document.getElementById(id);
+let slotId = null;
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    '&#' + c.charCodeAt(0) + ';');
+}
+
+function row(s) {
+  const t = esc(s.start) + '-' + esc(s.end);
+  if (s.booked) return `<li class="booked">${t} taken</li>`;
+  return `<li>${t} <button data-id="${esc(s.id)}">`
+    + 'Choose</button></li>';
+}
+
+async function load() {
+  $('form').hidden = true;
+  slotId = null;
+  const date = $('date').value;
+  $('slots').innerHTML = '';
+  if (!date) return;
+  let res;
+  try { res = await fetch('/api/slots?date=' + date); }
+  catch { $('msg').textContent = 'Network error.'; return; }
+  if (!res.ok) { $('msg').textContent = 'Bad date.'; return; }
+  $('slots').innerHTML = (await res.json()).map(row).join('');
+}
+
+$('date').addEventListener('change', () => {
+  $('msg').textContent = '';
+  load();
+});
+
+$('slots').addEventListener('click', (e) => {
+  const id = e.target.dataset.id;
+  if (!id) return;
+  slotId = id;
+  $('chosen').textContent = id.replace('T', ' at ') + ':00';
+  $('form').hidden = false;
+});
+
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const res = await fetch('/api/bookings', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      slotId, name: $('name').value, email: $('email').value,
+    }),
+  });
+  $('msg').textContent = res.status === 201 ? 'Booked!'
+    : res.status === 409 ? 'Sorry, that slot was just taken.'
+    : 'Please check your name and email.';
+  if (res.ok || res.status === 409) load();
+});
+</script>
+</body>
+</html>
